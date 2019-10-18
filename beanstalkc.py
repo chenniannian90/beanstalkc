@@ -5,6 +5,8 @@ import logging
 import socket
 import sys
 
+__python_version__ = sys.version_info.major
+
 
 __license__ = '''
 Copyright (C) 2008-2016 Andreas Bolka
@@ -47,12 +49,20 @@ class SocketError(BeanstalkcException):
             raise SocketError(err)
 
 
+def to_str(data):
+    return data if isinstance(data, str) else data.decode()
+
+
+def to_bytes(data):
+    return data if isinstance(data, bytes) else data.encode()
+
+
 class Connection(object):
     def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT, parse_yaml=True,
                  connect_timeout=socket.getdefaulttimeout()):
         if parse_yaml is True:
             try:
-                parse_yaml = __import__('yaml').load
+                parse_yaml = __import__('yaml').full_load
             except ImportError:
                 logging.error('Failed to load PyYAML, will not parse YAML')
                 parse_yaml = False
@@ -93,6 +103,8 @@ class Connection(object):
         self.connect()
 
     def _interact(self, command, expected_ok, expected_err=[]):
+
+        command = to_bytes(command) if __python_version__ == 3 else to_str(command)
         SocketError.wrap(self._socket.sendall, command)
         status, results = self._read_response()
         if status in expected_ok:
@@ -106,6 +118,8 @@ class Connection(object):
         line = SocketError.wrap(self._socket_file.readline)
         if not line:
             raise SocketError()
+
+        line = to_str(line)
         response = line.split()
         return response[0], response[1:]
 
@@ -114,7 +128,7 @@ class Connection(object):
         SocketError.wrap(self._socket_file.read, 2)  # trailing crlf
         if size > 0 and not body:
             raise SocketError()
-        return body
+        return to_str(body)
 
     def _interact_value(self, command, expected_ok, expected_err=[]):
         return self._interact(command, expected_ok, expected_err)[0]

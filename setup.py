@@ -21,6 +21,9 @@ workqueue service.
 ''',
     url='http://github.com/earl/beanstalkc',
     license='Apache License, Version 2.0',
+    install_requires=[
+          "PyYAML==5.1.2"
+    ],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
